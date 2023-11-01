@@ -114,6 +114,7 @@ BusDigital::BusDigital(BusConfig &bc, uint8_t nr, const ColorOrderMap &com) : Bu
   _needsRefresh = bc.refreshReq || bc.type == TYPE_TM1814;
   _skip = bc.skipAmount;    //sacrificial pixels
   _len = bc.count + _skip;
+  _multiplier = bc.multiply;
   _iType = PolyBus::getI(bc.type, _pins, nr);
   if (_iType == I_NONE) return;
   uint16_t lenToCreate = _len;
@@ -172,7 +173,7 @@ void IRAM_ATTR BusDigital::setPixelColor(uint16_t pix, uint32_t c) {
       case 1: c = RGBW32(W(c)   , G(cOld), B(cOld), 0); break;
       case 2: c = RGBW32(R(cOld), G(cOld), W(c)   , 0); break;
     }
-  }
+  }  
   else if (_type == TYPE_WS2812_MULTIPLY) {    
     // pix * _multiplier ^= first real pixel / LED
     pix = (pix * _multiplier);
@@ -180,8 +181,8 @@ void IRAM_ATTR BusDigital::setPixelColor(uint16_t pix, uint32_t c) {
     for (uint16_t i = pix; i < (pix + _multiplier - 1); i++) // _multiplier - 1 --> last pixel will already be set below
     {
       PolyBus::setPixelColor(_busPtr, _iType, i, c, co);
-      pix = i + 1; // last pixel will be set below
     }
+    pix = (pix + _multiplier - 1); // last pixel will be set below
   }
   PolyBus::setPixelColor(_busPtr, _iType, pix, c, co);
 }
@@ -202,7 +203,8 @@ uint32_t BusDigital::getPixelColor(uint16_t pix) {
     return c;
   }
   else if (_type == TYPE_WS2812_MULTIPLY) {
-    // ???
+    // pix * _multiplier ^= first real pixel / LED
+    pix = (pix * _multiplier);
   }
   return PolyBus::getPixelColor(_busPtr, _iType, pix, co);
 }
