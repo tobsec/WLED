@@ -93,6 +93,7 @@ class Bus {
     Bus(uint8_t type, uint16_t start, uint8_t aw)
     : _bri(255)
     , _len(1)
+    , _multiplier(1)
     , _valid(false)
     , _needsRefresh(false)
     {
@@ -162,6 +163,7 @@ class Bus {
     uint8_t  _bri;
     uint16_t _start;
     uint16_t _len;
+    uint8_t _multiplier;
     bool     _valid;
     bool     _needsRefresh;
     uint8_t  _autoWhiteMode;

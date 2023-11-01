@@ -118,6 +118,7 @@ BusDigital::BusDigital(BusConfig &bc, uint8_t nr, const ColorOrderMap &com) : Bu
   if (_iType == I_NONE) return;
   uint16_t lenToCreate = _len;
   if (bc.type == TYPE_WS2812_1CH_X3) lenToCreate = NUM_ICS_WS2812_1CH_3X(_len); // only needs a third of "RGB" LEDs for NeoPixelBus 
+  else if (bc.type == TYPE_WS2812_MULTIPLY) lenToCreate = _len * _multiplier; // NeoPixelBus controls x * LEDs per Pixel
   _busPtr = PolyBus::create(_iType, _pins, lenToCreate, nr, _frequencykHz);
   _valid = (_busPtr != nullptr);
   _colorOrder = bc.colorOrder;
@@ -172,6 +173,16 @@ void IRAM_ATTR BusDigital::setPixelColor(uint16_t pix, uint32_t c) {
       case 2: c = RGBW32(R(cOld), G(cOld), W(c)   , 0); break;
     }
   }
+  else if (_type == TYPE_WS2812_MULTIPLY) {    
+    // pix * _multiplier ^= first real pixel / LED
+    pix = (pix * _multiplier);
+
+    for (uint16_t i = pix; i < (pix + _multiplier - 1); i++) // _multiplier - 1 --> last pixel will already be set below
+    {
+      PolyBus::setPixelColor(_busPtr, _iType, i, c, co);
+      pix = i + 1; // last pixel will be set below
+    }
+  }
   PolyBus::setPixelColor(_busPtr, _iType, pix, c, co);
 }
 
@@ -189,6 +200,9 @@ uint32_t BusDigital::getPixelColor(uint16_t pix) {
       case 2: c = RGBW32(B(c), B(c), B(c), B(c)); break;
     }
     return c;
+  }
+  else if (_type == TYPE_WS2812_MULTIPLY) {
+    // ???
   }
   return PolyBus::getPixelColor(_busPtr, _iType, pix, co);
 }

@@ -1148,6 +1148,7 @@ class PolyBus {
         case TYPE_WS2812_2CH_X3:
         case TYPE_WS2812_RGB:
         case TYPE_WS2812_WWA:
+        case TYPE_WS2812_MULTIPLY:
           return I_8266_U0_NEO_3 + offset;
         case TYPE_SK6812_RGBW:
           return I_8266_U0_NEO_4 + offset;
@@ -1194,6 +1195,7 @@ class PolyBus {
         case TYPE_WS2812_2CH_X3:
         case TYPE_WS2812_RGB:
         case TYPE_WS2812_WWA:
+        case TYPE_WS2812_MULTIPLY:
           return I_32_RN_NEO_3 + offset;
         case TYPE_SK6812_RGBW:
           return I_32_RN_NEO_4 + offset;
