@@ -190,14 +190,14 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       uint16_t start = elm["start"] | 0;
       if (length==0 || start + length > MAX_LEDS) continue; // zero length or we reached max. number of LEDs, just stop
       uint8_t ledType = elm["type"] | TYPE_WS2812_RGB;
-      uint8_t multiply = elm["multiply"] | 1;
+      uint8_t duplicate = elm["duplicate"] | 1;
       bool reversed = elm["rev"];
       bool refresh = elm["ref"] | false;
       uint16_t freqkHz = elm[F("freq")] | 0;  // will be in kHz for DotStar and Hz for PWM (not yet implemented fully)
       ledType |= refresh << 7; // hack bit 7 to indicate strip requires off refresh
       uint8_t AWmode = elm[F("rgbwm")] | autoWhiteMode;
       if (fromFS) {
-        BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode, freqkHz, multiply);
+        BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode, freqkHz, duplicate);
         mem += BusManager::memUsage(bc);
         if (mem <= MAX_LED_MEMORY) if (busses.add(bc) == -1) break;  // finalization will be done in WLED::beginStrip()
       } else {
@@ -825,6 +825,7 @@ void serializeConfig() {
     for (uint8_t i = 0; i < nPins; i++) ins_pin.add(pins[i]);
     ins[F("order")] = bus->getColorOrder();
     ins["rev"] = bus->reversed;
+    ins["duplicate"] = bus->getDuplicates();
     ins[F("skip")] = bus->skippedLeds();
     ins["type"] = bus->getType() & 0x7F;
     ins["ref"] = bus->isOffRefreshRequired();

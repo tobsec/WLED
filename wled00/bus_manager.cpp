@@ -114,12 +114,12 @@ BusDigital::BusDigital(BusConfig &bc, uint8_t nr, const ColorOrderMap &com) : Bu
   _needsRefresh = bc.refreshReq || bc.type == TYPE_TM1814;
   _skip = bc.skipAmount;    //sacrificial pixels
   _len = bc.count + _skip;
-  _multiplier = bc.multiply;
+  _duplicate = bc.duplicate;
   _iType = PolyBus::getI(bc.type, _pins, nr);
   if (_iType == I_NONE) return;
   uint16_t lenToCreate = _len;
   if (bc.type == TYPE_WS2812_1CH_X3) lenToCreate = NUM_ICS_WS2812_1CH_3X(_len); // only needs a third of "RGB" LEDs for NeoPixelBus 
-  else if (bc.type == TYPE_WS2812_MULTIPLY) lenToCreate = _len * _multiplier; // NeoPixelBus controls x * LEDs per Pixel
+  lenToCreate = _len * _duplicate; // NeoPixelBus controls x * LEDs per Pixel
   _busPtr = PolyBus::create(_iType, _pins, lenToCreate, nr, _frequencykHz);
   _valid = (_busPtr != nullptr);
   _colorOrder = bc.colorOrder;
@@ -174,17 +174,24 @@ void IRAM_ATTR BusDigital::setPixelColor(uint16_t pix, uint32_t c) {
       case 2: c = RGBW32(R(cOld), G(cOld), W(c)   , 0); break;
     }
   }  
-  else if (_type == TYPE_WS2812_MULTIPLY) {    
-    // pix * _multiplier ^= first real pixel / LED
-    pix = (pix * _multiplier);
 
-    for (uint16_t i = pix; i < (pix + _multiplier - 1); i++) // _multiplier - 1 --> last pixel will already be set below
-    {
-      PolyBus::setPixelColor(_busPtr, _iType, i, c, co);
-    }
-    pix = (pix + _multiplier - 1); // last pixel will be set below
+  pix = (pix * _duplicate); // pix * _duplicate ^= first real pixel / LED in group
+
+  for (uint16_t i = pix; i < (pix + _duplicate - 1); i++) // _duplicate - 1 --> last pixel will already be set below
+  {
+    PolyBus::setPixelColor(_busPtr, _iType, i, c, co);
   }
+  pix = (pix + _duplicate - 1); // last pixel will be set below
+
   PolyBus::setPixelColor(_busPtr, _iType, pix, c, co);
+
+  // Test above code changes first, then try below optimzed changes
+  // pix = (pix * _duplicate); // pix * _duplicate ^= first real pixel / LED in group
+
+  // for (uint16_t i = pix; i < (pix + _duplicate); i++)
+  // {
+  //   PolyBus::setPixelColor(_busPtr, _iType, i, c, co);
+  // }
 }
 
 uint32_t BusDigital::getPixelColor(uint16_t pix) {
@@ -202,10 +209,9 @@ uint32_t BusDigital::getPixelColor(uint16_t pix) {
     }
     return c;
   }
-  else if (_type == TYPE_WS2812_MULTIPLY) {
-    // pix * _multiplier ^= first real pixel / LED
-    pix = (pix * _multiplier);
-  }
+
+  pix = (pix * _duplicate); // in case of duplicates, get value of first real pixel / LED
+
   return PolyBus::getPixelColor(_busPtr, _iType, pix, co);
 }
 

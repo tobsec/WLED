@@ -30,11 +30,11 @@ struct BusConfig {
   uint8_t autoWhite;
   uint8_t pins[5] = {LEDPIN, 255, 255, 255, 255};
   uint16_t frequency;
-  uint8_t multiply;
-  BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false, uint8_t skip = 0, byte aw=RGBW_MODE_MANUAL_ONLY, uint16_t clock_kHz=0U, uint8_t pmultiply=1U) {
+  uint8_t duplicate;
+  BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false, uint8_t skip = 0, byte aw=RGBW_MODE_MANUAL_ONLY, uint16_t clock_kHz=0U, uint8_t pduplicate=1U) {
     refreshReq = (bool) GET_BIT(busType,7);
     type = busType & 0x7F;  // bit 7 may be/is hacked to include refresh info (1=refresh in off state, 0=no refresh)
-    count = len; start = pstart; colorOrder = pcolorOrder; reversed = rev; skipAmount = skip; autoWhite = aw; frequency = clock_kHz; multiply = pmultiply;
+    count = len; start = pstart; colorOrder = pcolorOrder; reversed = rev; skipAmount = skip; autoWhite = aw; frequency = clock_kHz; duplicate = pduplicate;
     uint8_t nPins = 1;
     if (type >= TYPE_NET_DDP_RGB && type < 96) nPins = 4; //virtual network bus. 4 "pins" store IP address
     else if (type > 47) nPins = 2;
@@ -94,7 +94,7 @@ class Bus {
     Bus(uint8_t type, uint16_t start, uint8_t aw)
     : _bri(255)
     , _len(1)
-    , _multiplier(1)
+    , _duplicate(1)
     , _valid(false)
     , _needsRefresh(false)
     {
@@ -117,6 +117,7 @@ class Bus {
     virtual void     setColorOrder() {}
     virtual uint8_t  getColorOrder() { return COL_ORDER_RGB; }
     virtual uint8_t  skippedLeds() { return 0; }
+    virtual uint8_t  getDuplicates() { return _duplicate; }
     virtual uint16_t getFrequency() { return 0U; }
     inline  uint16_t getStart() { return _start; }
     inline  void     setStart(uint16_t start) { _start = start; }
@@ -164,7 +165,7 @@ class Bus {
     uint8_t  _bri;
     uint16_t _start;
     uint16_t _len;
-    uint8_t _multiplier;
+    uint8_t _duplicate;
     bool     _valid;
     bool     _needsRefresh;
     uint8_t  _autoWhiteMode;
